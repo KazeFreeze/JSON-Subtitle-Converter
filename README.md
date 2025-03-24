@@ -1,13 +1,3 @@
----
-### GitHub Repository Title
-
-**Universal Subtitle Converter (JSON ➜ SRT/TXT for GDrive, YouTube & More)**
-
----
-
-### README.md
-
-````markdown
 # Universal Subtitle Converter
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -36,8 +26,6 @@ Universal Subtitle Converter is a user-friendly desktop application that convert
    ```bash
    git clone https://github.com/your-username/Universal-Subtitle-Converter.git
    ```
-````
-
 2. Navigate into the project directory:
    ```bash
    cd Universal-Subtitle-Converter

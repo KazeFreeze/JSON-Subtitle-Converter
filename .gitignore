@@ -1,1 +1,4 @@
-/output
+output
+dist
+build
+*.spec

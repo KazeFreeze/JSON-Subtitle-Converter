@@ -8,7 +8,7 @@ class SubtitleConverterApp:
     def __init__(self, root):
         self.root = root
         self.root.title("JSON to Subtitle Converter")
-        self.root.geometry("600x480")
+        self.root.geometry("600x520")  # Increased height to accommodate VTT option
 
         # Create main frame with padding
         main_frame = ttk.Frame(root, padding="10")
@@ -109,9 +109,14 @@ class SubtitleConverterApp:
             row=0, column=0, padx=5, pady=5, sticky="w"
         )
 
+        self.export_vtt = IntVar(value=0)  # Added VTT option
+        ttk.Checkbutton(format_frame, text="VTT", variable=self.export_vtt).grid(
+            row=0, column=1, padx=5, pady=5, sticky="w"
+        )
+
         self.export_txt = IntVar(value=1)
         ttk.Checkbutton(format_frame, text="Plain Text", variable=self.export_txt).grid(
-            row=0, column=1, padx=5, pady=5, sticky="w"
+            row=0, column=2, padx=5, pady=5, sticky="w"
         )
 
         self.separate_folders = IntVar(value=0)
@@ -119,7 +124,7 @@ class SubtitleConverterApp:
             format_frame,
             text="Use Separate Folders for Each Format",
             variable=self.separate_folders,
-        ).grid(row=1, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+        ).grid(row=1, column=0, columnspan=3, padx=5, pady=5, sticky="w")
 
         # Convert Button
         convert_frame = ttk.Frame(main_frame)
@@ -183,7 +188,11 @@ class SubtitleConverterApp:
         if not output_dir:
             messagebox.showwarning("Warning", "Please select an output directory!")
             return
-        if not self.export_srt.get() and not self.export_txt.get():
+        if (
+            not self.export_srt.get()
+            and not self.export_txt.get()
+            and not self.export_vtt.get()
+        ):
             messagebox.showwarning(
                 "Warning", "Please select at least one output format!"
             )
@@ -193,6 +202,8 @@ class SubtitleConverterApp:
         if self.separate_folders.get():
             if self.export_srt.get():
                 os.makedirs(os.path.join(output_dir, "srt"), exist_ok=True)
+            if self.export_vtt.get():
+                os.makedirs(os.path.join(output_dir, "vtt"), exist_ok=True)
             if self.export_txt.get():
                 os.makedirs(os.path.join(output_dir, "txt"), exist_ok=True)
 
@@ -300,6 +311,18 @@ class SubtitleConverterApp:
             with open(srt_path, "w", encoding="utf-8") as f:
                 f.write(srt_content)
 
+        # VTT format
+        if self.export_vtt.get():
+            vtt_content = self.generate_vtt(subtitles)
+            if self.separate_folders.get():
+                vtt_dir = os.path.join(output_dir, "vtt")
+                vtt_path = os.path.join(vtt_dir, f"{output_base}.vtt")
+            else:
+                vtt_path = os.path.join(output_dir, f"{output_base}.vtt")
+
+            with open(vtt_path, "w", encoding="utf-8") as f:
+                f.write(vtt_content)
+
         # Plain text format
         if self.export_txt.get():
             txt_content = self.generate_plain_text(subtitles)
@@ -314,10 +337,18 @@ class SubtitleConverterApp:
 
     # Conversion functions
     def ms_to_srt_time(self, ms):
+        """Convert milliseconds to SRT format time (HH:MM:SS,MMM)"""
         hours, ms = divmod(ms, 3600000)
         minutes, ms = divmod(ms, 60000)
         seconds, ms = divmod(ms, 1000)
         return f"{hours:02}:{minutes:02}:{seconds:02},{ms:03}"
+
+    def ms_to_vtt_time(self, ms):
+        """Convert milliseconds to VTT format time (HH:MM:SS.MMM)"""
+        hours, ms = divmod(ms, 3600000)
+        minutes, ms = divmod(ms, 60000)
+        seconds, ms = divmod(ms, 1000)
+        return f"{hours:02}:{minutes:02}:{seconds:02}.{ms:03}"
 
     def convert_json_to_subtitles(self, data):
         subtitles = []
@@ -350,6 +381,7 @@ class SubtitleConverterApp:
         return subtitles
 
     def generate_srt(self, subtitles):
+        """Generate SRT format subtitle content"""
         srt = []
         for i, sub in enumerate(subtitles, 1):
             start = self.ms_to_srt_time(sub["start"])
@@ -357,7 +389,20 @@ class SubtitleConverterApp:
             srt.append(f"{i}\n{start} --> {end}\n{sub['text'].strip()}\n")
         return "\n".join(srt)
 
+    def generate_vtt(self, subtitles):
+        """Generate WebVTT format subtitle content"""
+        vtt = ["WEBVTT\n"]  # WebVTT header
+
+        for i, sub in enumerate(subtitles, 1):
+            start = self.ms_to_vtt_time(sub["start"])
+            end = self.ms_to_vtt_time(sub["end"])
+            # In VTT, cue identifier is optional but useful for debugging
+            vtt.append(f"\n{i}\n{start} --> {end}\n{sub['text'].strip()}")
+
+        return "\n".join(vtt)
+
     def generate_plain_text(self, subtitles):
+        """Generate plain text from subtitles (just the text content)"""
         return " ".join(sub["text"].strip() for sub in subtitles)
 
 

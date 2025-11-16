@@ -31,3 +31,6 @@ Thumbs.db
 # Other temporary files
 *.log
 *.tmp
+
+# Outputs
+output/
